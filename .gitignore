@@ -1,0 +1,26 @@
+# 忽略所有 .log 文件
+*.log
+
+# 忽略指定目录
+node_modules/
+dist/
+build/
+.vscode/
+.idea/
+
+# 忽略指定文件
+.env
+.DS_Store
+*.tmp
+*.temp
+
+# 忽略特定路径的文件
+config/local.json
+src/secrets.json
+
+# 使用 ! 来取消忽略
+!important.log
+
+# 忽略目录下的所有文件但保留目录
+logs/*
+!logs/.gitkeep 
