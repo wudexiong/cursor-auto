@@ -2,7 +2,7 @@ const path = require('path');
 
 module.exports = {
     target: 'node',
-    mode: 'none',
+    mode: 'development',
     entry: './src/extension.ts',
     output: {
         path: path.resolve(__dirname, 'dist'),
@@ -28,5 +28,5 @@ module.exports = {
             }
         ]
     },
-    devtool: 'nosources-source-map'
+    devtool: 'source-map'
 }; 
