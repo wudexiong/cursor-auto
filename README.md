@@ -1,118 +1,78 @@
-# Cursor 生产力助手
+# Cursor生产力助手
 
-Cursor 编辑器的生产力增强扩展。
+一个为Cursor编辑器开发的生产力增强扩展，提供智能文件管理、Git操作自动化等功能。
 
 ## 功能特性
 
-- 检查扩展运行状态
-- 更多功能开发中...
+### 1. 文件管理
+- 自动添加和更新文件头部注释
+- 文件长度监控和优化建议
+- 智能文件结构分析
 
-## 开发环境设置
+### 2. Git操作自动化
+- 自动初始化Git仓库
+- 智能提交信息生成
+- 文件变更自动分类
 
-### 前置要求
+### 3. 项目管理
+- README文件自动更新
+- 项目结构优化建议
+- 开发规范检查
 
-- Node.js (>= 16.0.0)
-- VS Code 或 Cursor 编辑器
-- Git
+## 安装
 
-### 安装依赖
+1. 在Cursor编辑器中打开扩展面板
+2. 搜索"Cursor生产力助手"
+3. 点击安装
 
+## 使用方法
+
+### 文件头部注释
+- 命令：`更新文件头部注释`
+- 快捷键：无
+- 说明：自动为当前文件添加或更新标准格式的头部注释
+
+### Git自动提交
+- 命令：`Git自动提交`
+- 快捷键：无
+- 说明：自动检测文件变更，生成智能提交信息并提交
+
+## 配置选项
+
+在设置中可以配置以下选项：
+
+- `cursor-productivity.enableAutoHeader`: 是否启用自动添加文件头部注释
+- `cursor-productivity.autoUpdateReadme`: 是否自动更新README.md文件
+- `cursor-productivity.gitAutoCommit`: 是否启用Git自动提交
+
+## 开发
+
+1. 克隆仓库
 ```bash
-# 安装所有依赖
+git clone https://github.com/wwwjs/cursor-productivity-extension.git
+```
+
+2. 安装依赖
+```bash
 npm install
 ```
 
-## 调试指南
+3. 编译项目
+```bash
+npm run compile
+```
 
-### 1. 环境准备
+4. 启动调试
+- 按F5启动调试
+- 在新窗口中测试功能
 
-1. 确保 Node.js 版本正确
+## 贡献
 
-   ```bash
-   node --version  # 应该 >= 16.0.0
-   ```
-
-2. 检查项目结构
-   ```
-   .
-   ├── .vscode/
-   │   ├── launch.json     # 调试配置
-   │   └── tasks.json      # 任务配置
-   ├── src/
-   │   └── extension.ts    # 扩展入口文件
-   ├── package.json        # 项目配置
-   └── webpack.config.js   # 构建配置
-   ```
-
-### 2. 构建项目
-
-1. 清理旧的构建文件
-
-   ```bash
-   npm run clean
-   ```
-
-2. 构建项目
-   ```bash
-   npm run compile
-   ```
-
-### 3. 启动调试
-
-1. 在 VS Code/Cursor 中打开项目
-
-2. 按 F5 启动调试
-
-   - 这将打开一个新的扩展开发主机窗口
-   - 应该看到 "Cursor 生产力助手已启动" 的通知
-
-3. 验证扩展是否正常工作：
-   - 使用 Ctrl+Shift+P (Windows) 或 Cmd+Shift+P (Mac) 打开命令面板
-   - 输入 "Cursor" 或 "检查"
-   - 选择 "检查 Cursor 生产力助手状态"
-   - 应该看到 "Cursor 生产力助手运行正常！" 的提示
-
-### 4. 调试技巧
-
-1. 查看输出
-
-   - 打开输出面板（查看 > 输出）
-   - 在下拉列表中选择 "Cursor 生产力助手"
-   - 可以看到扩展的运行日志
-
-2. 开发者工具
-
-   - 帮助 > 切换开发人员工具
-   - 查看控制台输出和错误信息
-
-3. 常见问题解决
-   - 如果命令不可见，尝试重新加载窗口（Ctrl+R）
-   - 如果构建失败，检查 dist 目录是否正确生成
-   - 如果依赖有问题，尝试删除 node_modules 并重新安装
-
-### 5. 发布准备
-
-1. 打包扩展
-
-   ```bash
-   npm run package
-   ```
-
-2. 测试打包后的扩展
-   - 确保所有功能正常工作
-   - 检查性能和内存使用情况
-
-## 贡献指南
-
-1. Fork 项目
-2. 创建特性分支
-3. 提交改动
-4. 推送到分支
-5. 创建 Pull Request
+欢迎提交Issue和Pull Request。
 
 ## 许可证
 
-[ISC](LICENSE)
+MIT License
 
 ## 更多信息
 

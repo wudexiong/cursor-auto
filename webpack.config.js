@@ -10,7 +10,10 @@ module.exports = {
         libraryTarget: 'commonjs2'
     },
     externals: {
-        vscode: 'commonjs vscode'
+        vscode: 'commonjs vscode',
+        chokidar: 'commonjs chokidar',
+        'fs-extra': 'commonjs fs-extra',
+        'markdown-it': 'commonjs markdown-it'
     },
     resolve: {
         extensions: ['.ts', '.js']
@@ -22,7 +25,12 @@ module.exports = {
                 exclude: /node_modules/,
                 use: [
                     {
-                        loader: 'ts-loader'
+                        loader: 'ts-loader',
+                        options: {
+                            compilerOptions: {
+                                "module": "es6"
+                            }
+                        }
                     }
                 ]
             }

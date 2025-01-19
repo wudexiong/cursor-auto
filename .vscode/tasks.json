@@ -11,10 +11,11 @@
       "problemMatcher": ["$tsc-watch"],
       "isBackground": true,
       "presentation": {
-        "reveal": "silent",
-        "panel": "shared"
+        "reveal": "always",
+        "panel": "new"
       },
       "options": {
+        "cwd": "${workspaceFolder}",
         "statusbar": {
           "hide": true
         }
