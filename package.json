@@ -1,7 +1,7 @@
 {
   "name": "cursor-productivity-extension",
   "displayName": "Cursor生产力助手",
-  "description": "Cursor编辑器的生产力增强扩展",
+  "description": "提升Cursor编辑器的生产力",
   "version": "0.1.0",
   "publisher": "wwwjs",
   "engines": {
@@ -12,14 +12,24 @@
     "Other"
   ],
   "activationEvents": [
-    "onStartupFinished"
+    "onStartupFinished",
+    "onCommand:cursor-productivity.analyzeCode",
+    "onCommand:cursor-productivity.checkStatus",
+    "onCommand:cursor-productivity.updateFileHeader",
+    "onCommand:cursor-productivity.gitCommit"
   ],
-  "main": "./dist/extension.js",
+  "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
+        "command": "cursor-productivity.analyzeCode",
+        "title": "分析代码",
+        "category": "Cursor生产力助手",
+        "enablement": "editorIsOpen"
+      },
+      {
         "command": "cursor-productivity.checkStatus",
-        "title": "检查 Cursor 生产力助手状态",
+        "title": "检查状态",
         "category": "Cursor生产力助手"
       },
       {
@@ -29,10 +39,19 @@
       },
       {
         "command": "cursor-productivity.gitCommit",
-        "title": "Git自动提交",
+        "title": "智能提交Git变更",
         "category": "Cursor生产力助手"
       }
     ],
+    "menus": {
+      "editor/context": [
+        {
+          "when": "editorIsOpen",
+          "command": "cursor-productivity.analyzeCode",
+          "group": "navigation"
+        }
+      ]
+    },
     "configuration": {
       "title": "Cursor生产力助手",
       "properties": {
@@ -52,42 +71,55 @@
           "description": "是否启用Git自动提交"
         }
       }
-    }
+    },
+    "keybindings": [
+      {
+        "command": "cursor-productivity.analyzeCode",
+        "key": "ctrl+shift+a",
+        "mac": "cmd+shift+a",
+        "when": "editorTextFocus"
+      }
+    ]
   },
   "scripts": {
-    "vscode:prepublish": "npm run package",
+    "vscode:prepublish": "npm run compile",
     "compile": "webpack",
     "watch": "webpack --watch",
     "package": "webpack --mode production --devtool hidden-source-map",
     "compile-tests": "tsc -p . --outDir out",
     "watch-tests": "tsc -p . -w --outDir out",
-    "pretest": "npm run compile-tests && npm run compile && npm run lint",
+    "pretest": "npm run compile-tests && npm run compile",
     "lint": "eslint src --ext ts",
-    "test": "vscode-test",
+    "test": "node ./out/test/runTest.js",
     "clean": "rimraf out dist",
     "rebuild": "npm run clean && npm run compile"
   },
   "devDependencies": {
     "@types/chokidar": "^2.1.3",
     "@types/fs-extra": "^11.0.1",
+    "@types/glob": "^8.1.0",
     "@types/markdown-it": "^12.2.3",
+    "@types/mocha": "^10.0.6",
     "@types/node": "18.x",
+    "@types/sinon": "^17.0.2",
     "@types/vscode": "^1.85.0",
     "@typescript-eslint/eslint-plugin": "^6.15.0",
     "@typescript-eslint/parser": "^6.15.0",
+    "@vscode/test-cli": "^0.0.4",
+    "@vscode/test-electron": "^2.3.8",
     "eslint": "^8.56.0",
+    "glob": "^11.0.1",
+    "mocha": "^10.2.0",
     "rimraf": "^5.0.1",
+    "sinon": "^17.0.1",
     "ts-loader": "^9.5.1",
     "typescript": "^5.3.3",
     "webpack": "^5.89.0",
-    "webpack-cli": "^5.1.4",
-    "@vscode/test-cli": "^0.0.4",
-    "@vscode/test-electron": "^2.3.8"
+    "webpack-cli": "^5.1.4"
   },
   "dependencies": {
     "chokidar": "^3.5.3",
     "fs-extra": "^11.2.0",
-    "glob": "^10.3.3",
     "markdown-it": "^13.0.1",
     "simple-git": "^3.22.0"
   },

@@ -19,11 +19,13 @@ import * as vscode from "vscode";
 import { DocumentService } from './services/document-service';
 import { FileMonitorService } from './services/file-monitor-service';
 import { GitService } from './services/git-service';
+import { AIService } from './services/ai-service';
 
 let outputChannel: vscode.OutputChannel;
 let documentService: DocumentService;
 let fileMonitorService: FileMonitorService;
 let gitService: GitService;
+let aiService: AIService;
 
 export async function activate(context: vscode.ExtensionContext) {
   console.log("开始激活扩展...");
@@ -31,12 +33,14 @@ export async function activate(context: vscode.ExtensionContext) {
   try {
     // 创建输出通道
     outputChannel = vscode.window.createOutputChannel("Cursor生产力助手");
-    console.log("输出通道已创建");
+    outputChannel.appendLine("输出通道已创建");
+    outputChannel.show(true);
 
     // 创建服务实例
     documentService = new DocumentService();
     fileMonitorService = new FileMonitorService();
     gitService = new GitService();
+    aiService = new AIService();
 
     // 初始化服务
     await documentService.initialize();
@@ -47,56 +51,108 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
       documentService,
       fileMonitorService,
-      gitService
+      gitService,
+      aiService,
+      outputChannel
     );
 
     // 注册命令
     console.log("开始注册命令...");
-    const checkStatusCommand = vscode.commands.registerCommand(
-      "cursor-productivity.checkStatus",
-      () => {
-        console.log("命令被触发");
-        outputChannel.appendLine("执行状态检查命令");
-        outputChannel.show(true);
-        vscode.window.showInformationMessage("Cursor生产力助手运行正常！");
-      }
-    );
+    outputChannel.appendLine("开始注册命令...");
 
-    // 注册文档相关命令
-    const updateHeaderCommand = vscode.commands.registerCommand(
-      "cursor-productivity.updateFileHeader",
-      async () => {
-        const editor = vscode.window.activeTextEditor;
-        if (editor) {
-          await documentService.updateFileHeader(editor.document.fileName);
-          vscode.window.showInformationMessage("文件头部注释已更新");
+    const commands = [
+      {
+        id: 'cursor-productivity.checkStatus',
+        handler: () => {
+          outputChannel.appendLine("执行状态检查命令");
+          vscode.window.showInformationMessage("Cursor生产力助手运行正常！");
+        }
+      },
+      {
+        id: 'cursor-productivity.updateFileHeader',
+        handler: async () => {
+          const editor = vscode.window.activeTextEditor;
+          if (editor) {
+            await documentService.updateFileHeader(editor.document.fileName);
+            vscode.window.showInformationMessage("文件头部注释已更新");
+          }
+        }
+      },
+      {
+        id: 'cursor-productivity.gitCommit',
+        handler: async () => {
+          try {
+            await gitService.autoCommit();
+            vscode.window.showInformationMessage("Git提交成功");
+          } catch (error) {
+            vscode.window.showErrorMessage(`Git提交失败: ${error}`);
+          }
+        }
+      },
+      {
+        id: 'cursor-productivity.analyzeCode',
+        handler: async () => {
+          try {
+            // 获取当前编辑器
+            const editor = vscode.window.activeTextEditor;
+            if (!editor) {
+              vscode.window.showErrorMessage('请先打开一个文件');
+              return;
+            }
+
+            // 获取选中的代码或整个文件内容
+            const document = editor.document;
+            const selection = editor.selection;
+            const text = selection.isEmpty ? 
+              document.getText() : 
+              document.getText(selection);
+
+            outputChannel.appendLine("开始分析代码...");
+            outputChannel.appendLine(`代码长度: ${text.length} 字符`);
+
+            // 显示进度提示
+            await vscode.window.withProgress({
+              location: vscode.ProgressLocation.Notification,
+              title: "正在分析代码...",
+              cancellable: false
+            }, async (progress) => {
+              try {
+                // 调用 AI 分析
+                const result = await aiService.analyzeCursorAI(text);
+                
+                // 创建新文档显示结果
+                const resultDoc = await vscode.workspace.openTextDocument({
+                  content: result,
+                  language: 'markdown'
+                });
+                
+                await vscode.window.showTextDocument(resultDoc, {
+                  viewColumn: vscode.ViewColumn.Beside
+                });
+                
+                vscode.window.showInformationMessage('代码分析完成');
+              } catch (error) {
+                vscode.window.showErrorMessage(`分析失败: ${error}`);
+                outputChannel.appendLine(`分析错误: ${error}`);
+              }
+            });
+          } catch (error) {
+            vscode.window.showErrorMessage(`命令执行失败: ${error}`);
+            outputChannel.appendLine(`命令错误: ${error}`);
+          }
         }
       }
-    );
+    ];
 
-    // 注册Git相关命令
-    const gitCommitCommand = vscode.commands.registerCommand(
-      "cursor-productivity.gitCommit",
-      async () => {
-        try {
-          await gitService.autoCommit();
-          vscode.window.showInformationMessage("Git提交成功");
-        } catch (error) {
-          vscode.window.showErrorMessage(`Git提交失败: ${error}`);
-        }
-      }
-    );
-
-    context.subscriptions.push(
-      checkStatusCommand,
-      updateHeaderCommand,
-      gitCommitCommand
-    );
+    // 注册所有命令
+    commands.forEach(command => {
+      const disposable = vscode.commands.registerCommand(command.id, command.handler);
+      context.subscriptions.push(disposable);
+      outputChannel.appendLine(`已注册命令: ${command.id}`);
+    });
 
     console.log("命令注册完成");
-
-    // 将输出通道添加到订阅列表中
-    context.subscriptions.push(outputChannel);
+    outputChannel.appendLine("命令注册完成");
 
     // 初始化成功提示
     outputChannel.appendLine("Cursor生产力助手已成功激活");
@@ -123,6 +179,9 @@ export function deactivate() {
   }
   if (gitService) {
     gitService.dispose();
+  }
+  if (aiService) {
+    aiService.dispose();
   }
   if (outputChannel) {
     outputChannel.appendLine("Cursor生产力助手已停用");

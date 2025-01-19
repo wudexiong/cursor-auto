@@ -5,12 +5,38 @@
       "name": "运行扩展",
       "type": "extensionHost",
       "request": "launch",
-      "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
-      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}",
+        "--disable-extensions",
+        "--disable-workspace-trust"
+      ],
+      "outFiles": ["${workspaceFolder}/out/**/*.js"],
       "preLaunchTask": "npm: compile",
-      "skipFiles": [
-        "<node_internals>/**"
-      ]
+      "env": {
+        "VSCODE_DEBUG_MODE": "true",
+        "VSCODE_LOG_LEVEL": "debug"
+      },
+      "trace": true
+    },
+    {
+      "name": "扩展测试",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}",
+        "--extensionTestsPath=${workspaceFolder}/out/test/suite/index",
+        "--disable-extensions",
+        "--disable-workspace-trust"
+      ],
+      "outFiles": [
+        "${workspaceFolder}/out/**/*.js"
+      ],
+      "preLaunchTask": "npm: compile",
+      "env": {
+        "VSCODE_DEBUG_MODE": "true",
+        "VSCODE_LOG_LEVEL": "debug"
+      },
+      "trace": true
     }
   ]
 }

@@ -17,7 +17,8 @@
       "node",
       "vscode",
       "fs-extra",
-      "chokidar"
+      "chokidar",
+      "mocha"
     ]
   },
   "include": [

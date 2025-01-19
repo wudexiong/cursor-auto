@@ -8,9 +8,9 @@
  * 3. 提供重构建议
  * 
  * 实现思路：
- * - 通过Cursor编辑器的内置AI功能
- * - 分析文件变更内容
- * - 生成符合规范的提交信息
+ * - 使用 Cursor 内置的专有模型功能
+ * - 通过 VS Code API 调用 Cursor 命令
+ * - 集成 Composer 和 Chat 功能
  * 
  * @author Cursor生产力助手
  */
@@ -34,6 +34,104 @@ export class AIService {
     }
 
     /**
+     * 使用 Cursor AI 分析代码
+     */
+    public async analyzeCursorAI(content: string): Promise<string> {
+        try {
+            this.outputChannel.appendLine('开始分析代码...');
+            this.outputChannel.appendLine(`代码长度: ${content.length} 字符`);
+
+            // 打开 Composer 窗口
+            this.outputChannel.appendLine('尝试打开 Composer 窗口...');
+            await vscode.commands.executeCommand('cursor.openComposer');
+            this.outputChannel.appendLine('Composer 窗口已打开');
+            
+            // 发送分析请求
+            this.outputChannel.appendLine('准备发送分析请求...');
+            await vscode.commands.executeCommand('cursor.chat.send', {
+                message: `分析以下代码：\n\`\`\`\n${content}\n\`\`\`\n请提供代码结构分析和改进建议。`
+            });
+            this.outputChannel.appendLine('分析请求已发送');
+            
+            // 等待并获取分析结果
+            this.outputChannel.appendLine('等待分析结果...');
+            const result = await this.waitForChatResponse();
+            this.outputChannel.appendLine('已收到分析结果');
+            this.outputChannel.appendLine(`结果长度: ${result.length} 字符`);
+            
+            return result;
+        } catch (error) {
+            this.outputChannel.appendLine(`Cursor AI 分析失败: ${error}`);
+            if (error instanceof Error) {
+                this.outputChannel.appendLine(`错误堆栈: ${error.stack}`);
+            }
+            throw error;
+        }
+    }
+
+    /**
+     * 等待 Chat 响应
+     */
+    private async waitForChatResponse(): Promise<string> {
+        return new Promise((resolve, reject) => {
+            let timeout: NodeJS.Timeout | undefined;
+            let disposable: vscode.Disposable | undefined;
+
+            const cleanup = () => {
+                if (timeout) {
+                    clearTimeout(timeout);
+                    timeout = undefined;
+                }
+                if (disposable) {
+                    disposable.dispose();
+                    disposable = undefined;
+                }
+            };
+
+            try {
+                this.outputChannel.appendLine('设置编辑器变化监听器...');
+                disposable = vscode.window.onDidChangeActiveTextEditor(async (editor) => {
+                    this.outputChannel.appendLine('检测到编辑器变化');
+                    if (editor) {
+                        this.outputChannel.appendLine(`当前文件: ${editor.document.fileName}`);
+                    }
+
+                    if (editor?.document.fileName.includes('cursor-chat')) {
+                        const result = editor.document.getText();
+                        this.outputChannel.appendLine('找到 Chat 响应');
+                        
+                        if (!result || result.trim() === '') {
+                            cleanup();
+                            const error = new Error('Chat 响应为空');
+                            this.outputChannel.appendLine(`错误: ${error.message}`);
+                            reject(error);
+                            return;
+                        }
+                        
+                        cleanup();
+                        this.outputChannel.appendLine('成功获取响应');
+                        resolve(result);
+                    }
+                });
+
+                // 设置超时处理
+                this.outputChannel.appendLine('设置超时处理...');
+                timeout = setTimeout(() => {
+                    cleanup();
+                    const error = new Error('等待 Chat 响应超时');
+                    this.outputChannel.appendLine(`错误: ${error.message}`);
+                    reject(error);
+                }, 30000);  // 增加超时时间到 30 秒
+                this.outputChannel.appendLine('超时处理已设置');
+            } catch (error) {
+                cleanup();
+                this.outputChannel.appendLine(`等待响应时发生错误: ${error}`);
+                reject(error);
+            }
+        });
+    }
+
+    /**
      * 生成Git提交信息
      */
     public async generateCommitMessage(git: SimpleGit, files: any[]): Promise<string> {
@@ -41,49 +139,108 @@ export class AIService {
             // 收集文件变更信息
             const changes = await this.collectChanges(git, files);
             
-            // 分析变更内容
-            const analysis = await this.analyzeChanges(changes);
-            
-            // 生成提交信息
-            return this.formatCommitMessage(analysis);
+            // 使用 Cursor AI 生成提交信息
+            const message = await this.generateCommitWithCursor(changes);
+            return message;
         } catch (error) {
             this.outputChannel.appendLine(`生成提交信息失败: ${error}`);
-            // 返回基础的提交信息作为后备方案
             return this.generateBasicCommitMessage(files);
         }
     }
 
     /**
-     * 收集文件变更信息
+     * 使用 Cursor 生成提交信息
+     */
+    private async generateCommitWithCursor(changes: FileChange[]): Promise<string> {
+        try {
+            // 准备变更摘要
+            const summary = this.prepareChangesSummary(changes);
+            
+            // 使用 Cursor 的提交消息生成功能
+            await vscode.commands.executeCommand('cursor.generateCommitMessage', {
+                changes: summary
+            });
+            
+            // 获取生成的提交信息
+            const message = await this.waitForGeneratedMessage();
+            return message;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    /**
+     * 等待生成的提交信息
+     */
+    private async waitForGeneratedMessage(): Promise<string> {
+        return new Promise((resolve, reject) => {
+            let timeout: NodeJS.Timeout | undefined;
+            let disposable: vscode.Disposable | undefined;
+
+            const cleanup = () => {
+                if (timeout) {
+                    clearTimeout(timeout);
+                    timeout = undefined;
+                }
+                if (disposable) {
+                    disposable.dispose();
+                    disposable = undefined;
+                }
+            };
+
+            try {
+                disposable = vscode.window.onDidChangeActiveTextEditor(async (editor) => {
+                    if (editor?.document.fileName.includes('cursor-chat')) {
+                        const result = editor.document.getText();
+                        
+                        if (!result || result.trim() === '') {
+                            cleanup();
+                            reject(new Error('提交信息为空'));
+                            return;
+                        }
+                        
+                        cleanup();
+                        resolve(result);
+                    }
+                });
+
+                // 设置超时处理
+                timeout = setTimeout(() => {
+                    cleanup();
+                    reject(new Error('等待提交信息超时'));
+                }, 5000);  // 5秒超时
+            } catch (error) {
+                cleanup();
+                reject(error);
+            }
+        });
+    }
+
+    /**
+     * 收集变更信息
      */
     private async collectChanges(git: SimpleGit, files: any[]): Promise<FileChange[]> {
         const changes: FileChange[] = [];
         
         for (const file of files) {
-            try {
-                const filePath = file.path;
-                const type = this.getChangeType(file);
-                
-                // 获取文件内容（如果文件仍然存在）
-                let content: string | undefined;
-                if (type !== 'delete') {
-                    const uri = vscode.Uri.file(path.join(vscode.workspace.workspaceFolders![0].uri.fsPath, filePath));
-                    const document = await vscode.workspace.openTextDocument(uri);
-                    content = document.getText();
-                }
-
-                changes.push({
-                    path: filePath,
-                    content,
-                    type,
-                    oldPath: file.oldPath
-                });
-            } catch (error) {
-                this.outputChannel.appendLine(`收集文件 ${file.path} 的变更信息失败: ${error}`);
-            }
+            changes.push({
+                path: file.path,
+                type: this.getChangeType(file)
+            });
         }
-
+        
         return changes;
+    }
+
+    /**
+     * 准备变更摘要
+     */
+    private prepareChangesSummary(changes: FileChange[]): string {
+        return changes.map(change => {
+            const type = change.type;
+            const path = change.path;
+            return `${type}: ${path}`;
+        }).join('\n');
     }
 
     /**
